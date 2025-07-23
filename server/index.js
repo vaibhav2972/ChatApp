@@ -11,12 +11,15 @@ connectDB()
     io.on("error", (err) => {
       console.log("ERROR: ", err);
       throw err;
-    })
+    });
     server.on("error", (err) => {
       console.log("ERROR: ", err);
       throw err;
     });
-    server.listen(process.env.PORT || 8000, () => {
+    // server.listen(process.env.PORT || 8000, () => {
+    //   console.log(`Server is running on port ${process.env.PORT || 8000}`);
+    // });
+    server.listen(process.env.PORT || 8000, "0.0.0.0", () => {
       console.log(`Server is running on port ${process.env.PORT || 8000}`);
     });
   })
