@@ -1,0 +1,45 @@
+pipeline {
+  agent any
+
+  environment {
+    IMAGE_NAME = 'mystic8642/chat-app:latest'
+  }
+
+  stages {
+    stage('Clone') {
+      steps {
+        git 'https://github.com/vaibhav2972/ChatApp.git'
+      }
+    }
+
+    stage('Build Docker Image') {
+      steps {
+        sh 'docker build -t $IMAGE_NAME .'
+      }
+    }
+
+    stage('Push to Docker Hub') {
+      steps {
+        withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+          sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+          sh 'docker push $IMAGE_NAME'
+        }
+      }
+    }
+
+    stage('Deploy to EC2') {
+      steps {
+        sshagent (credentials: ['ec2-key']) {
+          sh '''
+            ssh -o StrictHostKeyChecking=no ec2-user@<PROD_EC2_IP> '
+              docker pull mystic8642/chat-app:latest &&
+              docker stop chatapp || true &&
+              docker rm chatapp || true &&
+              docker run -d -p 8000:8000 --env-file /home/ec2-user/server.env --name chatapp mystic8642/chat-app:latest
+            '
+          '''
+        }
+      }
+    }
+  }
+}
