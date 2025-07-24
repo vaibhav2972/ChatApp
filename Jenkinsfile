@@ -47,9 +47,11 @@ pipeline {
 
     stage('Deploy to EC2') {
       steps {
-        sshagent (credentials: ['ec2-key']) {
-          sh """
-            ssh -o StrictHostKeyChecking=no ubuntu@${params.EC2_IP} '
+        withCredentials([sshUserPrivateKey(credentialsId: 'ec2-key', keyFileVariable: 'SSH_KEY')]) {
+          sh '''
+            chmod 600 $SSH_KEY
+
+            ssh -o StrictHostKeyChecking=no -i $SSH_KEY ubuntu@${EC2_IP} << EOF
               set -e
 
               # Install Docker if not present
@@ -66,9 +68,12 @@ pipeline {
               sudo docker pull mystic8642/chat-app:latest
               sudo docker stop chatapp || true
               sudo docker rm chatapp || true
-              sudo docker run -d -p 8000:8000 --env-file /home/ubuntu/server.env --name chatapp mystic8642/chat-app:latest
-            '
-          """
+              sudo docker run -d -p 8000:8000 \\
+                --env-file /home/ubuntu/server.env \\
+                --env CORS_ORIGIN=http://${EC2_IP}:8000 \\
+                --name chatapp mystic8642/chat-app:latest
+            EOF
+          '''
         }
       }
     }
