@@ -50,10 +50,23 @@ pipeline {
         sshagent (credentials: ['ec2-key']) {
           sh """
             ssh -o StrictHostKeyChecking=no ubuntu@${params.EC2_IP} '
-              docker pull mystic8642/chat-app:latest &&
-              docker stop chatapp || true &&
-              docker rm chatapp || true &&
-              docker run -d -p 8000:8000 --env-file /home/ubuntu/server.env --name chatapp mystic8642/chat-app:latest
+              set -e
+
+              # Install Docker if not present
+              if ! command -v docker &> /dev/null; then
+                echo "Docker not found. Installing..."
+                sudo apt update
+                sudo apt install -y docker.io
+                sudo usermod -aG docker ubuntu
+                sudo systemctl enable docker
+                sudo systemctl start docker
+              fi
+
+              # Pull latest image and run container
+              sudo docker pull mystic8642/chat-app:latest
+              sudo docker stop chatapp || true
+              sudo docker rm chatapp || true
+              sudo docker run -d -p 8000:8000 --env-file /home/ubuntu/server.env --name chatapp mystic8642/chat-app:latest
             '
           """
         }
