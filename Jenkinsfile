@@ -1,6 +1,10 @@
 pipeline {
   agent any
 
+  parameters {
+    string(name: 'EC2_IP', defaultValue: '', description: 'Public IP address of the EC2 instance')
+  }
+
   environment {
     IMAGE_NAME = 'mystic8642/chat-app:latest'
   }
@@ -44,14 +48,14 @@ pipeline {
     stage('Deploy to EC2') {
       steps {
         sshagent (credentials: ['ec2-key']) {
-          sh '''
-            ssh -o StrictHostKeyChecking=no ubuntu@16.171.42.81 "
+          sh """
+            ssh -o StrictHostKeyChecking=no ubuntu@${params.EC2_IP} '
               docker pull mystic8642/chat-app:latest &&
               docker stop chatapp || true &&
               docker rm chatapp || true &&
               docker run -d -p 8000:8000 --env-file /home/ubuntu/server.env --name chatapp mystic8642/chat-app:latest
-            "
-          '''
+            '
+          """
         }
       }
     }
