@@ -45,12 +45,12 @@ pipeline {
       steps {
         sshagent (credentials: ['ec2-key']) {
           sh '''
-            ssh -o StrictHostKeyChecking=no ubuntu@16.171.42.81 << "EOF"
-              docker pull mystic8642/chat-app:latest
-              docker stop chatapp || true
-              docker rm chatapp || true
+            ssh -o StrictHostKeyChecking=no ubuntu@16.171.42.81 "
+              docker pull mystic8642/chat-app:latest &&
+              docker stop chatapp || true &&
+              docker rm chatapp || true &&
               docker run -d -p 8000:8000 --env-file /home/ubuntu/server.env --name chatapp mystic8642/chat-app:latest
-            EOF
+            "
           '''
         }
       }
